@@ -3,21 +3,34 @@ from datetime import datetime, date
 import random
 import os
 
-# ========== 配置区 ==========
-CITY_CODE = "513434"
-
+# =====================【配置区，修改这里】=====================
+CITY_CODE = "5134034"          # 当前城市高德编码
+HOME_CITY_CODE = "513434"     # 家乡城市高德编码
+LOVE_DATE = date(2024, 6,15)  # 你们恋爱第一天，格式：年,月,日
 BIRTHDAY_LIST = [
-    {"name": "毛dear", "birthday": "5-25"},
-    {"name": "赵", "birthday": "8-20"},
+    {"name": "毛dear", "birthday": "05-25"},
 ]
-
-SENTENCES = [
-    {"en": "They who cannot do as they would, must do as they can.", "ch": "不能如愿而行，也须尽力而为。"},
-    {"en": "The best preparation for tomorrow is doing your best today.", "ch": "对明天做好的准备就是今天做到最好。"},
-    {"en": "Keep on going never give up.", "ch": "勇往直前，决不放弃。"}
+# 节假日日期（公历）
+NEW_YEAR = date(2027, 1, 1)    # 元旦
+SPRING_FESTIVAL = date(2027, 2, 6) # 春节
+# 随机电影库
+MOVIE_LIST = [
+    {"name":"西线无战事","score":"8.6"},
+    {"name":"星际穿越","score":"9.4"},
+    {"name":"肖申克的救赎","score":"9.7"},
+    {"name":"阿甘正传","score":"9.5"},
+    {"name":"盗梦空间","score":"9.4"},
+    {"name":"泰坦尼克号","score":"9.5"},
 ]
-# ============================
-
+# 每日一句文案
+SENTENCE_LIST = [
+    "草在结它的种子，风在摇它的叶子，我们站着不说话，就十分美好。",
+    "再冷的天你一笑我就暖了。",
+    "玫瑰不用长高，晚霞自会俯腰，爱意随风奔跑，温柔漫过山腰。",
+    "你若决定灿烂，山无遮，海无拦。",
+    "勇敢的人先享受世界。"
+]
+# ==============================================================
 
 def get_weather(city_code, amap_key):
     url = f"https://restapi.amap.com/v3/weather/weatherInfo?city={city_code}&key={amap_key}&extensions=base"
@@ -31,16 +44,8 @@ def get_weather(city_code, amap_key):
         "weather": live["weather"],
         "now_temp": live["temperature"],
         "wind_dir": live["winddirection"],
-        # 高德base接口没有最高最低温、pm2.5、日出日落，这里先留占位
-        "temp_low": "29",
-        "temp_high": "40",
-        "pm25": "17",
-        "aqi": "优",
-        "sunrise": "06:14",
-        "sunset": "19:15"
     }
     return data
-
 
 def calc_birthday_countdown(birthday_list):
     today = date.today()
@@ -54,16 +59,20 @@ def calc_birthday_countdown(birthday_list):
         res_text += f"<span style='color:#994477'>距离{item['name']}的生日还有{days}天</span><br>"
     return res_text.strip()
 
-
-def calc_china_day():
-    start = date(1949, 10, 1)
+def calc_love_days():
     today = date.today()
-    return (today - start).days
+    delta = today - LOVE_DATE
+    return delta.days
 
+def calc_day_diff(target_date):
+    today = date.today()
+    return (target_date - today).days
+
+def get_random_movie():
+    return random.choice(MOVIE_LIST)
 
 def get_random_sentence():
-    return random.choice(SENTENCES)
-
+    return random.choice(SENTENCE_LIST)
 
 def push_pushplus(token, title, content):
     url = "https://www.pushplus.plus/send"
@@ -77,38 +86,59 @@ def push_pushplus(token, title, content):
     print("PushPlus返回：", res.json())
     return res.json()
 
-
 if __name__ == "__main__":
     amap_key = os.environ["AMAP_KEY"]
-    push_token = os.environ["PUSHPLUS_TOKEN"]
+    push_token1 = os.environ["PUSHPLUS_TOKEN"]
+    push_token2 = os.environ.get("PUSHPLUS_TOKEN2") # 第二个接收人，可选
 
-    weather_data = get_weather(CITY_CODE, amap_key)
+    # 获取天气
+    weather_now = get_weather(CITY_CODE, amap_key)
+    weather_home = get_weather(HOME_CITY_CODE, amap_key)
+
+    # 计算各种倒计时
     birthday_text = calc_birthday_countdown(BIRTHDAY_LIST)
-    china_day = calc_china_day()
-    sen = get_random_sentence()
+    love_days = calc_love_days()
+    day_newyear = calc_day_diff(NEW_YEAR)
+    day_spring = calc_day_diff(SPRING_FESTIVAL)
 
-    today_str = datetime.now().strftime("%Y-%m-%d %A")
+    movie = get_random_movie()
+    sentence = get_random_sentence()
+
+    now_dt = datetime.now()
+    today_str = now_dt.strftime("%Y-%m-%d %A")
+
+    # 温馨提示文本
+    temp = int(weather_now["now_temp"])
+    if temp <= 10:
+        tip = "[室外温度过低，记得多穿点衣服保暖]"
+    elif temp >= 30:
+        tip = "[天气炎热，注意防暑多喝水]"
+    else:
+        tip = "[天气适宜，保持好心情]"
 
     msg_content = f"""
 <div style="font-size:16px;line-height:1.8;">
-<span style="color:#995522">{today_str}</span><br>
-<span>地区(┌・ω・┐)：</span><span style="color:#228822">{weather_data['city_name']}</span><br>
-<span>天气(◍•ᴗ•◍)：</span><span style="color:#772299">{weather_data['weather']}</span><br>
-<span>最低气温：</span><span style="color:#2288bb">{weather_data['temp_low']}℃</span><br>
-<span>最高气温：</span><span style="color:#dd4422">{weather_data['temp_high']}℃</span><br>
-<span>当前气温：</span><span style="color:#2288bb">{weather_data['now_temp']}℃</span><br>
-<span>当前风向：</span><span style="color:#2288bb">{weather_data['wind_dir']}</span><br>
-<span>pm2.5值：</span><span style="color:#224488">{weather_data['pm25']}</span><br>
-<span>空气质量：</span><span style="color:#772299">{weather_data['aqi']}</span><br>
-<span>日出时间：</span><span style="color:#224488">{weather_data['sunrise']}</span><br>
-<span>日落时间：</span><span style="color:#224488">{weather_data['sunset']}</span><br>
-<span>今天是新中国成立的第</span><span style="color:#223388">{china_day}</span><span>天</span><br>
+<span style="color:#22bb44">[记得晚上早点睡觉哈，然后做个好梦！]</span><br>
+<span>把酒言欢的时候，你是否还在拼搏，秋风送爽的时候，你是否还在加班，我的关心，才最最珍贵，今夜我还在想着你入睡，晚安，亲爱的！</span><br>
+<span>所在城市：</span><span style="color:#2288bb">{weather_now['city_name']}</span><br>
+<span>当前时间：</span><span style="color:#2288bb">{now_dt.strftime("%Y-%m-%d %H:%M:%S")} {today_str}</span><br>
+<span>农历：2026年农历七月十三日</span><br>
+<span>今日天气：</span><span style="color:#772299">{weather_now['weather']}</span><br>
+<span>今日风向：</span><span style="color:#2288bb">{weather_now['wind_dir']}</span><br>
+<span>当前温度：</span><span style="color:#dd4422">{weather_now['now_temp']}℃</span><br>
+<span style="color:#22bb44">{tip}</span><br>
 {birthday_text}
-<span>今日建议：</span><span style="color:#552299">阴，且天气炎热，建议停止户外运动，进行低强度运动。</span><br><br>
-<span style="color:#bb9944">{sen['en']}</span><br>
-<span style="color:#bb9944">{sen['ch']}</span>
+<span style='color:#994477'>距离元旦还有{day_newyear}天</span><br>
+<span style='color:#994477'>距离春节还有{day_spring}天</span><br>
+<span style='color:#994477'>今天是我们恋爱的第{love_days}天</span><br>
+===家乡:{weather_home['city_name']} 天气:{weather_home['weather']}===<br>
+<span>今日评分最高电影：</span><span style="color:#bb44bb">{movie['name']}:{movie['score']}分</span><br>
+<span>每日一句：</span><br>
+<span style="color:#22bb44">{sentence}</span>
 </div>
 """
 
-    push_pushplus(push_token, "☁今日天气", msg_content)
-    print("推送完成")
+    push_pushplus(push_token1, "☁今日天气", msg_content)
+    if push_token2 is not None:
+        push_pushplus(push_token2, "☁今日天气", msg_content)
+    print("全部推送完成")
