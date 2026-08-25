@@ -4,11 +4,11 @@ import random
 import os
 
 # ========== 配置区 ==========
-CITY_CODE = "513401"
+CITY_CODE = "513434"
 
 BIRTHDAY_LIST = [
-    {"name": "毛", "birthday": "12-20"},
-    {"name": "赵", "birthday": "09-08"},
+    {"name": "毛dear", "birthday": "5-25"},
+    {"name": "赵", "birthday": "8-20"},
 ]
 
 SENTENCES = [
