@@ -4,11 +4,11 @@ import random
 import os
 
 # =====================【配置区，修改这里】=====================
-CITY_CODE = "5134034"          # 当前城市高德编码
-HOME_CITY_CODE = "513434"     # 家乡城市高德编码
-LOVE_DATE = date(2024, 6,15)  # 你们恋爱第一天，格式：年,月,日
+CITY_CODE = "513401"          # 当前城市高德编码
+HOME_CITY_CODE = "513401"     # 家乡城市高德编码
+LOVE_DATE = date(2025, 1, 1)  # 你们恋爱第一天，格式：年,月,日
 BIRTHDAY_LIST = [
-    {"name": "毛dear", "birthday": "05-25"},
+    {"name": "蓓蓓", "birthday": "09-08"},
 ]
 # 节假日日期（公历）
 NEW_YEAR = date(2027, 1, 1)    # 元旦
@@ -38,6 +38,9 @@ def get_weather(city_code, amap_key):
     print("高德返回数据：", resp)
     if resp["status"] != "1":
         raise Exception("高德天气请求失败！")
+    # 修复点！lives是列表，必须 [0] 取出第一条数据
+    if not resp["lives"]:
+        raise Exception("没有查到天气数据！")
     live = resp["lives"][0]
     data = {
         "city_name": live["city"],
@@ -122,7 +125,6 @@ if __name__ == "__main__":
 <span>把酒言欢的时候，你是否还在拼搏，秋风送爽的时候，你是否还在加班，我的关心，才最最珍贵，今夜我还在想着你入睡，晚安，亲爱的！</span><br>
 <span>所在城市：</span><span style="color:#2288bb">{weather_now['city_name']}</span><br>
 <span>当前时间：</span><span style="color:#2288bb">{now_dt.strftime("%Y-%m-%d %H:%M:%S")} {today_str}</span><br>
-<span>农历：2026年农历七月十三日</span><br>
 <span>今日天气：</span><span style="color:#772299">{weather_now['weather']}</span><br>
 <span>今日风向：</span><span style="color:#2288bb">{weather_now['wind_dir']}</span><br>
 <span>当前温度：</span><span style="color:#dd4422">{weather_now['now_temp']}℃</span><br>
