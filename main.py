@@ -26,8 +26,14 @@ def get_weather(city_id, key):
     air_url = f"https://devapi.qweather.com/v7/air/now?location={city_id}&key={key}"
 
     resp_now = requests.get(now_url).json()
+    print("和风实时天气返回：",resp_now)
+    if resp_now.get("code")!="200":
+        raise Exception(f"天气接口失败！返回code:{resp_now.get('code')}")
+        
     resp_astro = requests.get(astro_url).json()
+    print("日出日落返回：",resp_astro)
     resp_air = requests.get(air_url).json()
+    print("空气质量返回：",resp_air)
 
     data = {}
     data["city_name"] = resp_now["location"]["name"]
@@ -44,6 +50,7 @@ def get_weather(city_id, key):
     data["min_temp"] = resp_now["now"]["temp"]
 
     return data
+
 
 def calc_birthday_countdown(birthday_list):
     today = date.today()
