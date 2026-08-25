@@ -4,11 +4,11 @@ import random
 import os
 
 # =====================【配置区，修改这里】=====================
-CITY_CODE = "513401"          # 当前城市高德编码
-HOME_CITY_CODE = "513401"     # 家乡城市高德编码
-LOVE_DATE = date(2025, 1, 1)  # 你们恋爱第一天，格式：年,月,日
+CITY_CODE = "513434"          # 当前城市高德编码
+HOME_CITY_CODE = "513434"     # 家乡城市高德编码
+LOVE_DATE = date(2024, 6,15)  # 你们恋爱第一天，格式：年,月,日
 BIRTHDAY_LIST = [
-    {"name": "蓓蓓", "birthday": "09-08"},
+    {"name": "毛dear", "birthday": "05-25"},
 ]
 # 节假日日期（公历）
 NEW_YEAR = date(2027, 1, 1)    # 元旦
