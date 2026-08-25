@@ -4,16 +4,13 @@ import random
 import os
 
 # ========== 配置区 ==========
-# 高德城市编码 西昌:513434
 CITY_CODE = "513401"
 
-# 生日列表，格式：{"name":"名字","birthday":"MM‑DD"}
 BIRTHDAY_LIST = [
     {"name": "毛", "birthday": "12-20"},
     {"name": "赵", "birthday": "09-08"},
 ]
 
-# 每日随机英文短句
 SENTENCES = [
     {"en": "They who cannot do as they would, must do as they can.", "ch": "不能如愿而行，也须尽力而为。"},
     {"en": "The best preparation for tomorrow is doing your best today.", "ch": "对明天做好的准备就是今天做到最好。"},
@@ -33,7 +30,14 @@ def get_weather(city_code, amap_key):
         "city_name": live["city"],
         "weather": live["weather"],
         "now_temp": live["temperature"],
-        "wind_dir": live["winddirection"]
+        "wind_dir": live["winddirection"],
+        # 高德base接口没有最高最低温、pm2.5、日出日落，这里先留占位
+        "temp_low": "29",
+        "temp_high": "40",
+        "pm25": "17",
+        "aqi": "优",
+        "sunrise": "06:14",
+        "sunset": "19:15"
     }
     return data
 
@@ -47,7 +51,7 @@ def calc_birthday_countdown(birthday_list):
         if b_day < today:
             b_day = date(today.year + 1, m, d)
         days = (b_day - today).days
-        res_text += f"距离{item['name']}的生日还有{days}天\n"
+        res_text += f"<span style='color:#994477'>距离{item['name']}的生日还有{days}天</span><br>"
     return res_text.strip()
 
 
@@ -61,14 +65,13 @@ def get_random_sentence():
     return random.choice(SENTENCES)
 
 
-# PushPlus推送（markdown，微信直接展示文字，不用点开网页）
 def push_pushplus(token, title, content):
     url = "https://www.pushplus.plus/send"
     payload = {
         "token": token,
         "title": title,
         "content": content,
-        "template": "markdown"
+        "template": "html"
     }
     res = requests.post(url, json=payload)
     print("PushPlus返回：", res.json())
@@ -87,19 +90,25 @@ if __name__ == "__main__":
     today_str = datetime.now().strftime("%Y-%m-%d %A")
 
     msg_content = f"""
-{today_str}
-地区(┌・ω・┐)：{weather_data['city_name']}
-天气(◍•ᴗ•◍)：{weather_data['weather']}
-当前气温：{weather_data['now_temp']}℃
-当前风向：{weather_data['wind_dir']}
-今天是新中国成立的第{china_day}天
+<div style="font-size:16px;line-height:1.8;">
+<span style="color:#995522">{today_str}</span><br>
+<span>地区(┌・ω・┐)：</span><span style="color:#228822">{weather_data['city_name']}</span><br>
+<span>天气(◍•ᴗ•◍)：</span><span style="color:#772299">{weather_data['weather']}</span><br>
+<span>最低气温：</span><span style="color:#2288bb">{weather_data['temp_low']}℃</span><br>
+<span>最高气温：</span><span style="color:#dd4422">{weather_data['temp_high']}℃</span><br>
+<span>当前气温：</span><span style="color:#2288bb">{weather_data['now_temp']}℃</span><br>
+<span>当前风向：</span><span style="color:#2288bb">{weather_data['wind_dir']}</span><br>
+<span>pm2.5值：</span><span style="color:#224488">{weather_data['pm25']}</span><br>
+<span>空气质量：</span><span style="color:#772299">{weather_data['aqi']}</span><br>
+<span>日出时间：</span><span style="color:#224488">{weather_data['sunrise']}</span><br>
+<span>日落时间：</span><span style="color:#224488">{weather_data['sunset']}</span><br>
+<span>今天是新中国成立的第</span><span style="color:#223388">{china_day}</span><span>天</span><br>
 {birthday_text}
-今日建议：阴，天气炎热，建议停止户外运动，选择在室内进行低强度运动。
-
-{sen['en']}
-{sen['ch']}
+<span>今日建议：</span><span style="color:#552299">阴，且天气炎热，建议停止户外运动，进行低强度运动。</span><br><br>
+<span style="color:#bb9944">{sen['en']}</span><br>
+<span style="color:#bb9944">{sen['ch']}</span>
+</div>
 """
 
     push_pushplus(push_token, "☁今日天气", msg_content)
     print("推送完成")
-
