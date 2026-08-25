@@ -23,11 +23,11 @@ template_id = os.environ["TEMPLATE_ID"]
 
 # 用户列表 也可通过接口获取，但是接口获取的只有用户id没有用户昵称，不方便部分数据展示，如果有新增人员，对应添加一个user对象即可
 '''
-    user_id: 微信公众号的 openid
-       name: 昵称
-       date: 相识日期
-   birthday: 生日
-       city: 城市编码，api接口文档处查询
+    user_id: o20Fi3H7jVaKPlXKf0f5MF4jSgIU
+       name: dear
+       date: 2024-06-15
+   birthday: 05-25
+       city:513434
 '''
 user_id_list = [
     {'user_id': 'olqaK5sXw4RM4PEaRgi9I0kH4ldE', "name": 'ㅤ', "date": "2021-03-01", "birthday": "03-26",
