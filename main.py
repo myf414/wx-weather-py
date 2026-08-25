@@ -6,9 +6,8 @@ from datetime import datetime, date
 CITY_ID = "101272706"
 # 多人生日列表，格式：{"name":"名字","birthday":"MM-DD"}
 BIRTHDAY_LIST = [
-    {"name": "陈", "birthday": "12-20"},
-    {"name": "廖", "birthday": "09-08"},
-    {"name": "吴", "birthday": "10-12"},
+    {"name": "毛", "birthday": "5-25"},
+    {"name": "赵", "birthday": "08-20"},
 ]
 # 每日随机英文短句
 SENTENCES = [
