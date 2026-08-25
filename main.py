@@ -23,7 +23,7 @@ template_id = os.environ["TEMPLATE_ID"]
 
 # 用户列表 也可通过接口获取，但是接口获取的只有用户id没有用户昵称，不方便部分数据展示，如果有新增人员，对应添加一个user对象即可
 '''
-    user_id: o20Fi3H7jVaKPlXKf0f5MF4jSgIU
+    user_id:o20Fi3H7jVaKPlXKf0f5MF4jSgIU
        name: dear
        date: 2024-06-15
    birthday: 05-25
