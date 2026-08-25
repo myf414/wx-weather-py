@@ -1,9 +1,12 @@
 import requests
 from datetime import datetime, date
+import random
 
 # ========== 配置区 ==========
-# 城市ID，和风天气城市ID，越西县：101272706
-CITY_ID = "101272706"
+# 高德城市编码 西昌:513401 越西:513434
+CITY_CODE = "513401"
+# 高德天气key
+AMAP_KEY = ""
 # 多人生日列表，格式：{"name":"名字","birthday":"MM-DD"}
 BIRTHDAY_LIST = [
     {"name": "毛", "birthday": "5-25"},
@@ -17,40 +20,21 @@ SENTENCES = [
 ]
 # ============================
 
-def get_weather(city_id, key):
-    # 获取实时天气
-    now_url = f"https://devapi.qweather.com/v7/weather/now?location={city_id}&key={key}"
-    # 获取日出日落
-    astro_url = f"https://devapi.qweather.com/v7/astronomy/sun?location={city_id}&key={key}"
-    # 获取空气质量
-    air_url = f"https://devapi.qweather.com/v7/air/now?location={city_id}&key={key}"
-
-    resp_now = requests.get(now_url).json()
-    print("和风实时天气返回：",resp_now)
-    if resp_now.get("code")!="200":
-        raise Exception(f"天气接口失败！返回code:{resp_now.get('code')}")
-        
-    resp_astro = requests.get(astro_url).json()
-    print("日出日落返回：",resp_astro)
-    resp_air = requests.get(air_url).json()
-    print("空气质量返回：",resp_air)
-
+def get_weather(city_code, amap_key):
+    url = f"https://restapi.amap.com/v3/weather/weatherInfo?city={city_code}&key={amap_key}&extensions=base"
+    resp = requests.get(url).json()
+    print("高德返回数据：",resp)
+    if resp["status"] != "1":
+        raise Exception("高德天气请求失败！")
+    live = resp["lives"][0]
     data = {}
-    data["city_name"] = resp_now["location"]["name"]
-    data["weather"] = resp_now["now"]["text"]
-    data["now_temp"] = resp_now["now"]["temp"]
-    data["feels_like"] = resp_now["now"]["feelsLike"]
-    data["wind_dir"] = resp_now["now"]["windDir"]
-    data["sunrise"] = resp_astro["sunrise"]
-    data["sunset"] = resp_astro["sunset"]
-    data["pm25"] = resp_air["now"]["pm2p5"]
-    data["air_quality"] = resp_air["now"]["category"]
-    # 取当日最高最低
-    data["max_temp"] = resp_now["now"]["temp"]
-    data["min_temp"] = resp_now["now"]["temp"]
-
+    data["city_name"] = live["city"]
+    data["weather"] = live["weather"]
+    data["now_temp"] = live["temperature"]
+    data["wind_dir"] = live["winddirection"]
+    data["max_temp"] = live["temperature"]
+    data["min_temp"] = live["temperature"]
     return data
-
 
 def calc_birthday_countdown(birthday_list):
     today = date.today()
@@ -65,13 +49,11 @@ def calc_birthday_countdown(birthday_list):
     return res_text.strip()
 
 def calc_china_day():
-    # 新中国成立 1949‑10‑01
     start = date(1949,10,1)
     today = date.today()
     return (today - start).days
 
 def get_random_sentence():
-    import random
     return random.choice(SENTENCES)
 
 def push_pushplus(token, title, content):
@@ -87,28 +69,21 @@ def push_pushplus(token, title, content):
 
 if __name__ == "__main__":
     import os
-    qkey = os.environ["QWEATHER_KEY"]
+    amap_key = os.environ["AMAP_KEY"]
     ptoken = os.environ["PUSHPLUS_TOKEN"]
 
-    weather_data = get_weather(CITY_ID, qkey)
+    weather_data = get_weather(CITY_CODE, amap_key)
     birthday_text = calc_birthday_countdown(BIRTHDAY_LIST)
     china_day = calc_china_day()
     sen = get_random_sentence()
 
     today_str = datetime.now().strftime("%Y-%m-%d %A")
-    # 消息内容，和截图排版保持一致，支持emoji
     msg_content = f"""
 <span style="color:#995522">{today_str}</span>
 地区(┌・ω・┐)：{weather_data['city_name']}
 天气(◍•ᴗ•◍)：{weather_data['weather']}
-最低气温：{weather_data['min_temp']}℃
-最高气温：{weather_data['max_temp']}℃
 当前气温：{weather_data['now_temp']}℃
 当前风向：{weather_data['wind_dir']}
-pm2.5值：{weather_data['pm25']}
-空气质量：{weather_data['air_quality']}
-日出时间：{weather_data['sunrise']}
-日落时间：{weather_data['sunset']}
 今天是新中国成立的第{china_day}天
 {birthday_text}
 今日建议：{weather_data['weather']}，天气炎热，建议停止户外运动，选择在室内进行低强度运动。
