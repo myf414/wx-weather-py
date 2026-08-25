@@ -27,7 +27,7 @@ template_id = os.environ["TEMPLATE_ID"]
        name: dear
        date: 2024-06-15
    birthday: 05-25
-       city:513434
+       city:513401
 '''
 user_id_list = [
     {'user_id': 'olqaK5sXw4RM4PEaRgi9I0kH4ldE', "name": 'ㅤ', "date": "2021-03-01", "birthday": "03-26",
