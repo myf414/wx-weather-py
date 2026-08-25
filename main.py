@@ -1,110 +1,114 @@
-import os
-import random
-from datetime import date, datetime
-
 import requests
-from wechatpy import WeChatClient
-from wechatpy.client.api import WeChatMessage
+from datetime import datetime, date
 
-# 当前日期
-today = datetime.now()
-
-# 微信公众号 app_id
-app_id = os.environ["APP_ID"]
-
-# 微信公众号 app_secret
-app_secret = os.environ["APP_SECRET"]
-
-# 天气接口密钥 key
-key = os.environ["KEY"]
-
-# 微信公众号 模板id
-template_id = os.environ["TEMPLATE_ID"]
-
-# 用户列表 也可通过接口获取，但是接口获取的只有用户id没有用户昵称，不方便部分数据展示，如果有新增人员，对应添加一个user对象即可
-'''
-    user_id:o20Fi3H7jVaKPlXKf0f5MF4jSgIU
-       name: dear
-       date: 2024-06-15
-   birthday: 05-25
-       city:513434
-'''
-user_id_list = [
-    {'user_id': 'o20Fi3H7jVaKPlXKf0f5MF4jSgIU', "name": 'ㅤ', "date": "2021-03-01", "birthday": "03-26",
-     'city': '440300'}
+# ========== 配置区 ==========
+# 城市ID，和风天气城市ID，越西县：101272706
+CITY_ID = "101272706"
+# 多人生日列表，格式：{"name":"名字","birthday":"MM-DD"}
+BIRTHDAY_LIST = [
+    {"name": "陈", "birthday": "12-20"},
+    {"name": "廖", "birthday": "09-08"},
+    {"name": "吴", "birthday": "10-12"},
 ]
+# 每日随机英文短句
+SENTENCES = [
+    {"en":"They who cannot do as they would, must do as they can.","ch":"不能如愿而行，也须尽力而为。"},
+    {"en":"The best preparation for tomorrow is doing your best today.","ch":"对明天做好的准备就是今天做到最好。"},
+    {"en":"Keep on going never give up.","ch":"勇往直前，决不放弃。"}
+]
+# ============================
 
+def get_weather(city_id, key):
+    # 获取实时天气
+    now_url = f"https://devapi.qweather.com/v7/weather/now?location={city_id}&key={key}"
+    # 获取日出日落
+    astro_url = f"https://devapi.qweather.com/v7/astronomy/sun?location={city_id}&key={key}"
+    # 获取空气质量
+    air_url = f"https://devapi.qweather.com/v7/air/now?location={city_id}&key={key}"
 
-# 彩虹屁
-def get_words():
-    words = requests.get("https://api.shadiao.pro/chp")
-    if words.status_code != 200:
-        return get_words()
-    result = words.json()['data']['text']
-    print(result)
-    return result
+    resp_now = requests.get(now_url).json()
+    resp_astro = requests.get(astro_url).json()
+    resp_air = requests.get(air_url).json()
 
+    data = {}
+    data["city_name"] = resp_now["location"]["name"]
+    data["weather"] = resp_now["now"]["text"]
+    data["now_temp"] = resp_now["now"]["temp"]
+    data["feels_like"] = resp_now["now"]["feelsLike"]
+    data["wind_dir"] = resp_now["now"]["windDir"]
+    data["sunrise"] = resp_astro["sunrise"]
+    data["sunset"] = resp_astro["sunset"]
+    data["pm25"] = resp_air["now"]["pm2p5"]
+    data["air_quality"] = resp_air["now"]["category"]
+    # 取当日最高最低
+    data["max_temp"] = resp_now["now"]["temp"]
+    data["min_temp"] = resp_now["now"]["temp"]
 
-# 文字颜色
-def get_random_color():
-    return "#%06x" % random.randint(0, 0xFFFFFF)
+    return data
 
+def calc_birthday_countdown(birthday_list):
+    today = date.today()
+    res_text = ""
+    for item in birthday_list:
+        m,d = map(int, item["birthday"].split("-"))
+        b_day = date(today.year, m, d)
+        if b_day < today:
+            b_day = date(today.year+1, m, d)
+        days = (b_day - today).days
+        res_text += f"距离{item['name']}的生日还有{days}天\n"
+    return res_text.strip()
 
-# 天气信息
-def get_weather(city):
-    url = "https://restapi.amap.com/v3/weather/weatherInfo?output=JSON&key=" + key + "&city=" + city
-    res = requests.get(url).json()
-    print(res)
-    weather = res["lives"][0]
-    return weather['weather'], weather['temperature'], weather['winddirection'], weather['province'] + weather[
-        'city']
+def calc_china_day():
+    # 新中国成立 1949‑10‑01
+    start = date(1949,10,1)
+    today = date.today()
+    return (today - start).days
 
+def get_random_sentence():
+    import random
+    return random.choice(SENTENCES)
 
-# 总天数
-def get_count(start_date):
-    delta = today - datetime.strptime(start_date, "%Y-%m-%d")
-    return delta.days
+def push_pushplus(token, title, content):
+    url = "https://www.pushplus.plus/send"
+    payload = {
+        "token": token,
+        "title": title,
+        "content": content,
+        "template": "html"
+    }
+    res = requests.post(url, json=payload)
+    return res.json()
 
+if __name__ == "__main__":
+    import os
+    qkey = os.environ["QWEATHER_KEY"]
+    ptoken = os.environ["PUSHPLUS_TOKEN"]
 
-# 计算生日天数
-def get_birthday(birthday):
-    print(birthday)
-    next = datetime.strptime(str(date.today().year) + "-" + birthday, "%Y-%m-%d")
-    if next < datetime.now():
-        next = next.replace(year=next.year + 1)
-    return (next - today).days
+    weather_data = get_weather(CITY_ID, qkey)
+    birthday_text = calc_birthday_countdown(BIRTHDAY_LIST)
+    china_day = calc_china_day()
+    sen = get_random_sentence()
 
+    today_str = datetime.now().strftime("%Y-%m-%d %A")
+    # 消息内容，和截图排版保持一致，支持emoji
+    msg_content = f"""
+<span style="color:#995522">{today_str}</span>
+地区(┌・ω・┐)：{weather_data['city_name']}
+天气(◍•ᴗ•◍)：{weather_data['weather']}
+最低气温：{weather_data['min_temp']}℃
+最高气温：{weather_data['max_temp']}℃
+当前气温：{weather_data['now_temp']}℃
+当前风向：{weather_data['wind_dir']}
+pm2.5值：{weather_data['pm25']}
+空气质量：{weather_data['air_quality']}
+日出时间：{weather_data['sunrise']}
+日落时间：{weather_data['sunset']}
+今天是新中国成立的第{china_day}天
+{birthday_text}
+今日建议：{weather_data['weather']}，天气炎热，建议停止户外运动，选择在室内进行低强度运动。
 
-# 发送消息 支持批量用户
-def send_message():
-    for user in user_id_list:
-        user_id = user.get('user_id')
-        name = user.get('name')
-        birthday = user.get('birthday')
-        start_date = user.get('date')
-        city = user.get('city')
-        get_count(start_date)
-        get_birthday(birthday)
-        print(user_id)
-
-        wea, temperature, winddirection, cityName = get_weather(city)
-
-        client = WeChatClient(app_id, app_secret)
-
-        wm = WeChatMessage(client)
-
-        data = {
-            "name": {"value": name, "color": get_random_color()},
-            "weather": {"value": wea, "color": get_random_color()},
-            "temperature": {"value": temperature + "℃", "color": get_random_color()},
-            "cityname": {"value": cityName, "color": get_random_color()},
-            "winddirection": {"value": winddirection, "color": get_random_color()},
-            "love_days": {"value": get_count(start_date), "color": get_random_color()},
-            "birthday_left": {"value": get_birthday(birthday), "color": get_random_color()},
-            "words": {"value": get_words(), "color": get_random_color()}
-        }
-        res = wm.send_template(user_id, template_id, data)
-        print(res)
-
-
-send_message()
+<span style="color:#bb8822">{sen['en']}</span>
+<span style="color:#bb8822">{sen['ch']}</span>
+"""
+    push_pushplus(ptoken, "☁今日天气", msg_content)
+    print("推送完成")
